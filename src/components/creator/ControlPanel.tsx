@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { fetchDrivingRoute } from "./fetchRoute";
 import {
   ROUTE_PRESETS,
   TEMPLATES,
@@ -95,21 +97,41 @@ export function ControlPanel({
   const fields = TEMPLATE_FIELDS[templateId];
   const has = (key: keyof TripData | "route-actions") => fields.includes(key);
 
-  const randomRoute = () => {
-    const preset =
-      ROUTE_PRESETS[Math.floor(Math.random() * ROUTE_PRESETS.length)];
-    onDataChange({
+  const [routing, setRouting] = useState(false);
+
+  const applyPresetAndRoute = async (preset: (typeof ROUTE_PRESETS)[number]) => {
+    const base = {
       ...data,
       startLocation: preset.start,
       endLocation: preset.end,
       expectedMin: preset.expectedMin,
       actualMin: preset.actualMin,
+      startCoord: preset.startCoord,
+      endCoord: preset.endCoord,
+      routeGeometry: null,
       routeSeed: Math.floor(Math.random() * 1_000_000),
-    });
+    };
+    onDataChange(base);
+    setRouting(true);
+    const geometry = await fetchDrivingRoute(preset.startCoord, preset.endCoord);
+    setRouting(false);
+    if (geometry) {
+      onDataChange({ ...base, routeGeometry: geometry });
+    }
   };
 
-  const reshufflePath = () =>
-    onDataChange({ ...data, routeSeed: Math.floor(Math.random() * 1_000_000) });
+  const randomRoute = () => {
+    const preset =
+      ROUTE_PRESETS[Math.floor(Math.random() * ROUTE_PRESETS.length)];
+    void applyPresetAndRoute(preset);
+  };
+
+  const refetchRoute = async () => {
+    setRouting(true);
+    const geometry = await fetchDrivingRoute(data.startCoord, data.endCoord);
+    setRouting(false);
+    if (geometry) onDataChange({ ...data, routeGeometry: geometry });
+  };
 
   const unitSpeed = units === "kmh" ? "km/h" : "mph";
   const unitDist = units === "kmh" ? "km" : "mi";
@@ -196,15 +218,17 @@ export function ControlPanel({
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={randomRoute}
-                className="rounded-md border border-driven-accent/40 bg-driven-accent/10 px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-accent hover:bg-driven-accent/20 transition-colors"
+                disabled={routing}
+                className="rounded-md border border-driven-accent/40 bg-driven-accent/10 px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-accent hover:bg-driven-accent/20 transition-colors disabled:opacity-50 disabled:cursor-wait"
               >
                 🎲 Random Route
               </button>
               <button
-                onClick={reshufflePath}
-                className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors"
+                onClick={refetchRoute}
+                disabled={routing}
+                className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors disabled:opacity-50 disabled:cursor-wait"
               >
-                ↻ Reshuffle Path
+                {routing ? "Routing…" : "↻ Re-fetch Route"}
               </button>
             </div>
           )}

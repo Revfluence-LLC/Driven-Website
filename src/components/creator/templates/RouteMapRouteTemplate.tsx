@@ -1,46 +1,10 @@
+"use client";
+
 import { THEMES, formatDuration, type TemplateProps } from "../types";
-
-// Deterministic pseudo-random from an integer seed.
-function seeded(seed: number) {
-  let s = seed || 1;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
-function buildRoutePath(seed: number) {
-  const rand = seeded(seed);
-  const start = { x: 120, y: 180 };
-  const end = { x: 880, y: 660 };
-  const segments: Array<{ x: number; y: number }> = [start];
-  const n = 5;
-  for (let i = 1; i < n; i++) {
-    const t = i / n;
-    const bx = start.x + (end.x - start.x) * t;
-    const by = start.y + (end.y - start.y) * t;
-    const jitterX = (rand() - 0.5) * 260;
-    const jitterY = (rand() - 0.5) * 200;
-    segments.push({ x: bx + jitterX, y: by + jitterY });
-  }
-  segments.push(end);
-
-  let d = `M ${start.x} ${start.y}`;
-  for (let i = 1; i < segments.length; i++) {
-    const prev = segments[i - 1];
-    const curr = segments[i];
-    const midX = (prev.x + curr.x) / 2;
-    const midY = (prev.y + curr.y) / 2;
-    d += ` Q ${prev.x} ${prev.y}, ${midX} ${midY}`;
-  }
-  d += ` T ${end.x} ${end.y}`;
-  return { d, start, end };
-}
+import { LeafletMap } from "../LeafletMapClient";
 
 export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
   const palette = THEMES[theme];
-  const { d: pathD, start, end } = buildRoutePath(data.routeSeed);
-
   const deltaMin = data.expectedMin - data.actualMin;
   const isFaster = deltaMin > 0;
   const deltaLabel = isFaster
@@ -111,90 +75,27 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
         style={{
           flex: 1,
           borderRadius: 28,
-          background: `${palette.surface}`,
           border: `1px solid ${palette.accent}30`,
           position: "relative",
           overflow: "hidden",
+          minHeight: 0,
         }}
       >
-        {/* Grid texture */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: `linear-gradient(${palette.accent}0A 1px, transparent 1px), linear-gradient(90deg, ${palette.accent}0A 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-            opacity: 0.8,
-          }}
+        <LeafletMap
+          start={data.startCoord}
+          end={data.endCoord}
+          route={data.routeGeometry}
+          accent={palette.accent}
         />
-        {/* Diagonal contour lines for "map" feel */}
-        <svg
-          viewBox="0 0 1000 800"
-          width="100%"
-          height="100%"
-          style={{ position: "absolute", inset: 0 }}
-          preserveAspectRatio="none"
-        >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <path
-              key={i}
-              d={`M ${-200 + i * 180} 900 Q ${300 + i * 120} ${600 - i * 40} ${1200} ${200 - i * 30}`}
-              stroke={palette.accent}
-              strokeWidth="1"
-              fill="none"
-              opacity={0.08}
-            />
-          ))}
-
-          {/* Route path (glow) */}
-          <path
-            d={pathD}
-            stroke={palette.accent}
-            strokeWidth="24"
-            fill="none"
-            strokeLinecap="round"
-            opacity="0.25"
-            style={{ filter: `blur(8px)` }}
-          />
-          {/* Route path (primary) */}
-          <path
-            d={pathD}
-            stroke={palette.accent}
-            strokeWidth="6"
-            fill="none"
-            strokeLinecap="round"
-          />
-
-          {/* Start pin */}
-          <circle
-            cx={start.x}
-            cy={start.y}
-            r="22"
-            fill={palette.accent}
-            stroke="#fff"
-            strokeWidth="4"
-          />
-          <circle cx={start.x} cy={start.y} r="8" fill="#fff" />
-          {/* End pin */}
-          <circle
-            cx={end.x}
-            cy={end.y}
-            r="22"
-            fill="#FF5277"
-            stroke="#fff"
-            strokeWidth="4"
-          />
-          <circle cx={end.x} cy={end.y} r="8" fill="#fff" />
-        </svg>
 
         {/* Start label */}
         <div
           style={{
             position: "absolute",
-            left: 32,
-            top: 32,
-            background: "rgba(0,0,0,0.7)",
+            left: 24,
+            top: 24,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.75)",
             borderRadius: 12,
             padding: "10px 18px",
             fontSize: 20,
@@ -212,9 +113,10 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
         <div
           style={{
             position: "absolute",
-            right: 32,
-            bottom: 32,
-            background: "rgba(0,0,0,0.7)",
+            right: 24,
+            bottom: 24,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.75)",
             borderRadius: 12,
             padding: "10px 18px",
             fontSize: 20,
@@ -227,6 +129,25 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
         >
           <span style={{ color: "#FF5277", marginRight: 10 }}>● END</span>
           {data.endLocation}
+        </div>
+
+        {/* Attribution (subtle, required for OSM/Carto) */}
+        <div
+          style={{
+            position: "absolute",
+            right: 16,
+            top: 16,
+            zIndex: 1000,
+            fontSize: 10,
+            letterSpacing: "1px",
+            color: "rgba(255,255,255,0.45)",
+            fontFamily: "var(--font-geist-mono), monospace",
+            background: "rgba(0,0,0,0.4)",
+            padding: "4px 8px",
+            borderRadius: 6,
+          }}
+        >
+          © OpenStreetMap · CARTO
         </div>
       </div>
 

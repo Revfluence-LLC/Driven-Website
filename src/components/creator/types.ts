@@ -12,6 +12,8 @@ export type TemplateId =
 
 export type ThemeId = "cyan" | "green" | "amber" | "violet" | "crimson";
 
+export type LatLng = [number, number]; // [lat, lng]
+
 export type TripData = {
   tripName: string;
   topSpeed: number;
@@ -28,6 +30,9 @@ export type TripData = {
   expectedMin: number;
   actualMin: number;
   routeSeed: number;
+  startCoord: LatLng;
+  endCoord: LatLng;
+  routeGeometry: LatLng[] | null;
 };
 
 export type TemplateProps = {
@@ -180,24 +185,101 @@ export const DEFAULT_TRIP_DATA: TripData = {
   expectedMin: 261,
   actualMin: 205,
   routeSeed: 7,
+  startCoord: [34.0522, -118.2437],
+  endCoord: [36.1699, -115.1398],
+  routeGeometry: null,
 };
 
-export const ROUTE_PRESETS: Array<{
+export type RoutePreset = {
   start: string;
   end: string;
   expectedMin: number;
   actualMin: number;
-}> = [
-  { start: "Los Angeles", end: "Las Vegas", expectedMin: 261, actualMin: 205 },
-  { start: "San Francisco", end: "Lake Tahoe", expectedMin: 218, actualMin: 174 },
-  { start: "New York", end: "Boston", expectedMin: 229, actualMin: 182 },
-  { start: "Miami", end: "Orlando", expectedMin: 213, actualMin: 168 },
-  { start: "Seattle", end: "Portland", expectedMin: 178, actualMin: 142 },
-  { start: "Chicago", end: "Milwaukee", expectedMin: 92, actualMin: 76 },
-  { start: "Austin", end: "Dallas", expectedMin: 195, actualMin: 156 },
-  { start: "Denver", end: "Aspen", expectedMin: 236, actualMin: 198 },
-  { start: "Phoenix", end: "San Diego", expectedMin: 359, actualMin: 294 },
-  { start: "London", end: "Brighton", expectedMin: 105, actualMin: 82 },
+  startCoord: LatLng;
+  endCoord: LatLng;
+};
+
+export const ROUTE_PRESETS: RoutePreset[] = [
+  {
+    start: "Los Angeles",
+    end: "Las Vegas",
+    expectedMin: 261,
+    actualMin: 205,
+    startCoord: [34.0522, -118.2437],
+    endCoord: [36.1699, -115.1398],
+  },
+  {
+    start: "San Francisco",
+    end: "Lake Tahoe",
+    expectedMin: 218,
+    actualMin: 174,
+    startCoord: [37.7749, -122.4194],
+    endCoord: [39.0968, -120.0324],
+  },
+  {
+    start: "New York",
+    end: "Boston",
+    expectedMin: 229,
+    actualMin: 182,
+    startCoord: [40.7128, -74.006],
+    endCoord: [42.3601, -71.0589],
+  },
+  {
+    start: "Miami",
+    end: "Orlando",
+    expectedMin: 213,
+    actualMin: 168,
+    startCoord: [25.7617, -80.1918],
+    endCoord: [28.5383, -81.3792],
+  },
+  {
+    start: "Seattle",
+    end: "Portland",
+    expectedMin: 178,
+    actualMin: 142,
+    startCoord: [47.6062, -122.3321],
+    endCoord: [45.5152, -122.6784],
+  },
+  {
+    start: "Chicago",
+    end: "Milwaukee",
+    expectedMin: 92,
+    actualMin: 76,
+    startCoord: [41.8781, -87.6298],
+    endCoord: [43.0389, -87.9065],
+  },
+  {
+    start: "Austin",
+    end: "Dallas",
+    expectedMin: 195,
+    actualMin: 156,
+    startCoord: [30.2672, -97.7431],
+    endCoord: [32.7767, -96.797],
+  },
+  {
+    start: "Denver",
+    end: "Aspen",
+    expectedMin: 236,
+    actualMin: 198,
+    startCoord: [39.7392, -104.9903],
+    endCoord: [39.1911, -106.8175],
+  },
+  {
+    start: "Phoenix",
+    end: "San Diego",
+    expectedMin: 359,
+    actualMin: 294,
+    startCoord: [33.4484, -112.074],
+    endCoord: [32.7157, -117.1611],
+  },
+  {
+    start: "London",
+    end: "Brighton",
+    expectedMin: 105,
+    actualMin: 82,
+    startCoord: [51.5074, -0.1278],
+    endCoord: [50.8225, -0.1372],
+  },
 ];
 
 export function formatSpeed(value: number, units: Units) {
