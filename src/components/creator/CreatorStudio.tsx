@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ControlPanel } from "./ControlPanel";
 import { LivePreview } from "./LivePreview";
+import { fetchDrivingRoute } from "./fetchRoute";
 import {
   DEFAULT_TRIP_DATA,
   type TemplateId,
@@ -11,11 +12,32 @@ import {
   type Units,
 } from "./types";
 
+const ROUTE_TEMPLATES: TemplateId[] = ["route-map-route", "route-map-stats"];
+
 export function CreatorStudio() {
   const [units, setUnits] = useState<Units>("mph");
   const [templateId, setTemplateId] = useState<TemplateId>("hud-gauge");
   const [theme, setTheme] = useState<ThemeId>("cyan");
   const [data, setData] = useState<TripData>(DEFAULT_TRIP_DATA);
+
+  // Re-fetch the real driving route whenever start/end coords change while a
+  // route template is active. When the user picks a new city, we clear
+  // routeGeometry so this effect fires; it then writes the new geometry back.
+  useEffect(() => {
+    if (!ROUTE_TEMPLATES.includes(templateId) || data.routeGeometry) return;
+    const controller = new AbortController();
+    fetchDrivingRoute(data.startCoord, data.endCoord, controller.signal).then(
+      (geometry) => {
+        if (!geometry) return;
+        setData((prev) =>
+          prev.startCoord === data.startCoord && prev.endCoord === data.endCoord
+            ? { ...prev, routeGeometry: geometry }
+            : prev,
+        );
+      },
+    );
+    return () => controller.abort();
+  }, [templateId, data.routeGeometry, data.startCoord, data.endCoord]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] lg:h-[calc(100vh-4rem)]">
@@ -38,6 +60,9 @@ export function CreatorStudio() {
           data={data}
           units={units}
           theme={theme}
+          ready={
+            !ROUTE_TEMPLATES.includes(templateId) || !!data.routeGeometry
+          }
         />
       </section>
     </div>

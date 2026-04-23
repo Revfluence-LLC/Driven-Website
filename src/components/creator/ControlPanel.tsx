@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
+import { fetchDrivingRoute } from "./fetchRoute";
+import { LocationAutocomplete } from "./LocationAutocomplete";
 import {
+  HEATMAP_CHUNKS,
   ROUTE_PRESETS,
   TEMPLATES,
   THEMES,
+  generateRandomSpeeds,
+  type LatLng,
   type TemplateId,
   type ThemeId,
   type TripData,
@@ -95,21 +101,62 @@ export function ControlPanel({
   const fields = TEMPLATE_FIELDS[templateId];
   const has = (key: keyof TripData | "route-actions") => fields.includes(key);
 
+  const [routing, setRouting] = useState(false);
+
   const randomRoute = () => {
     const preset =
       ROUTE_PRESETS[Math.floor(Math.random() * ROUTE_PRESETS.length)];
+    // Auto-routing effect in CreatorStudio will pick up the coord change.
     onDataChange({
       ...data,
       startLocation: preset.start,
       endLocation: preset.end,
+      startRegion: preset.startRegion,
+      endRegion: preset.endRegion,
       expectedMin: preset.expectedMin,
       actualMin: preset.actualMin,
+      startCoord: preset.startCoord,
+      endCoord: preset.endCoord,
+      routeGeometry: null,
+      routeSpeeds: null,
       routeSeed: Math.floor(Math.random() * 1_000_000),
     });
   };
 
-  const reshufflePath = () =>
-    onDataChange({ ...data, routeSeed: Math.floor(Math.random() * 1_000_000) });
+  const refetchRoute = async () => {
+    setRouting(true);
+    const geometry = await fetchDrivingRoute(data.startCoord, data.endCoord);
+    setRouting(false);
+    if (geometry) onDataChange({ ...data, routeGeometry: geometry });
+  };
+
+  const randomHeatmap = () => {
+    onDataChange({ ...data, routeSpeeds: generateRandomSpeeds(HEATMAP_CHUNKS) });
+  };
+
+  const clearHeatmap = () => {
+    onDataChange({ ...data, routeSpeeds: null });
+  };
+
+  const pickStart = (name: string, region: string, coord: LatLng) =>
+    onDataChange({
+      ...data,
+      startLocation: name,
+      startRegion: region,
+      startCoord: coord,
+      routeGeometry: null,
+      routeSpeeds: null,
+    });
+
+  const pickEnd = (name: string, region: string, coord: LatLng) =>
+    onDataChange({
+      ...data,
+      endLocation: name,
+      endRegion: region,
+      endCoord: coord,
+      routeGeometry: null,
+      routeSpeeds: null,
+    });
 
   const unitSpeed = units === "kmh" ? "km/h" : "mph";
   const unitDist = units === "kmh" ? "km" : "mi";
@@ -193,19 +240,39 @@ export function ControlPanel({
       <Section label="Trip Data">
         <div className="space-y-3">
           {has("route-actions") && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={randomRoute}
-                className="rounded-md border border-driven-accent/40 bg-driven-accent/10 px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-accent hover:bg-driven-accent/20 transition-colors"
-              >
-                🎲 Random Route
-              </button>
-              <button
-                onClick={reshufflePath}
-                className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors"
-              >
-                ↻ Reshuffle Path
-              </button>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={randomRoute}
+                  disabled={routing}
+                  className="rounded-md border border-driven-accent/40 bg-driven-accent/10 px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-accent hover:bg-driven-accent/20 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                >
+                  🎲 Random Route
+                </button>
+                <button
+                  onClick={refetchRoute}
+                  disabled={routing}
+                  className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                >
+                  {routing ? "Routing…" : "↻ Re-fetch Route"}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={randomHeatmap}
+                  disabled={!data.routeGeometry}
+                  className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  🔥 Random Heatmap
+                </button>
+                <button
+                  onClick={clearHeatmap}
+                  disabled={!data.routeSpeeds}
+                  className="rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono tracking-[2px] uppercase text-driven-text-secondary hover:text-driven-accent hover:border-driven-accent/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ⌫ Clear Heatmap
+                </button>
+              </div>
             </div>
           )}
 
@@ -218,19 +285,19 @@ export function ControlPanel({
           )}
 
           {(has("startLocation") || has("endLocation")) && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               {has("startLocation") && (
-                <Field
+                <LocationAutocomplete
                   label="Start Location"
                   value={data.startLocation}
-                  onChange={(v) => update("startLocation", v)}
+                  onSelect={pickStart}
                 />
               )}
               {has("endLocation") && (
-                <Field
+                <LocationAutocomplete
                   label="End Location"
                   value={data.endLocation}
-                  onChange={(v) => update("endLocation", v)}
+                  onSelect={pickEnd}
                 />
               )}
             </div>
