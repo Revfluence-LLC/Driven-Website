@@ -60,6 +60,9 @@ export function CreatorStudio() {
           data={data}
           units={units}
           theme={theme}
+          ready={
+            !ROUTE_TEMPLATES.includes(templateId) || !!data.routeGeometry
+          }
         />
       </section>
     </div>

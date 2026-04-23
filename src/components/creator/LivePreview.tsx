@@ -13,14 +13,46 @@ import {
 } from "./types";
 import { RenderTemplate } from "./templates/registry";
 
+// Resolve once every <img> inside `node` has finished loading (or errored).
+// Caps at 4s so a single hanging tile can't block the download forever.
+function waitForImagesLoaded(node: HTMLElement, timeoutMs = 4000) {
+  const imgs = Array.from(node.querySelectorAll("img"));
+  const pending = imgs.filter(
+    (img) => !(img.complete && img.naturalHeight > 0),
+  );
+  if (pending.length === 0) return Promise.resolve();
+  return Promise.race([
+    Promise.all(
+      pending.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+          }),
+      ),
+    ).then(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 type Props = {
   templateId: TemplateId;
   data: TripData;
   units: Units;
   theme: ThemeId;
+  // False while an async resource the template depends on (e.g. OSRM route)
+  // is still loading. Disables the Download button so the export doesn't
+  // capture a half-rendered state.
+  ready?: boolean;
 };
 
-export function LivePreview({ templateId, data, units, theme }: Props) {
+export function LivePreview({
+  templateId,
+  data,
+  units,
+  theme,
+  ready = true,
+}: Props) {
   const meta = TEMPLATES.find((t) => t.id === templateId)!;
   const dims = CANVAS_DIMENSIONS[meta.aspect];
 
@@ -55,12 +87,18 @@ export function LivePreview({ templateId, data, units, theme }: Props) {
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
+    // Wait for any map tiles / external images to finish loading. Without
+    // this, a fresh route template can get captured before OSM tiles arrive.
+    await waitForImagesLoaded(node);
     try {
       const dataUrl = await toPng(node, {
         width: dims.width,
         height: dims.height,
         pixelRatio: 1,
-        cacheBust: true,
+        // cacheBust rewrites image URLs with a timestamp query param, which
+        // defeats the browser's tile cache and can trigger CORS failures on
+        // Carto tiles. Tiles already bust cache via their own URL scheme.
+        cacheBust: false,
         style: {
           transform: "none",
           transformOrigin: "top left",
@@ -94,15 +132,16 @@ export function LivePreview({ templateId, data, units, theme }: Props) {
         </div>
         <button
           onClick={handleDownload}
-          disabled={downloading}
+          disabled={downloading || !ready}
+          title={!ready ? "Waiting for the route to finish loading…" : undefined}
           className="inline-flex items-center gap-2 rounded-md bg-driven-accent px-4 py-2 text-sm font-bold uppercase tracking-[2px] text-driven-bg-deep transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 glow-accent-sm"
         >
-          {downloading ? (
+          {downloading || !ready ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Download className="h-4 w-4" />
           )}
-          {downloading ? "Exporting" : "Download"}
+          {downloading ? "Exporting" : !ready ? "Routing…" : "Download"}
         </button>
       </div>
 
