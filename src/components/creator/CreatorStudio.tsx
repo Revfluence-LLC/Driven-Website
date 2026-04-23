@@ -20,7 +20,9 @@ export function CreatorStudio() {
   const [theme, setTheme] = useState<ThemeId>("cyan");
   const [data, setData] = useState<TripData>(DEFAULT_TRIP_DATA);
 
-  // Auto-fetch the real driving route the first time a route template is shown.
+  // Re-fetch the real driving route whenever start/end coords change while a
+  // route template is active. When the user picks a new city, we clear
+  // routeGeometry so this effect fires; it then writes the new geometry back.
   useEffect(() => {
     if (!ROUTE_TEMPLATES.includes(templateId) || data.routeGeometry) return;
     const controller = new AbortController();
@@ -28,7 +30,9 @@ export function CreatorStudio() {
       (geometry) => {
         if (!geometry) return;
         setData((prev) =>
-          prev.routeGeometry ? prev : { ...prev, routeGeometry: geometry },
+          prev.startCoord === data.startCoord && prev.endCoord === data.endCoord
+            ? { ...prev, routeGeometry: geometry }
+            : prev,
         );
       },
     );

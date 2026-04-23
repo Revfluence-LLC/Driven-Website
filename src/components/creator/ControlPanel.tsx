@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { fetchDrivingRoute } from "./fetchRoute";
+import { LocationAutocomplete } from "./LocationAutocomplete";
 import {
   ROUTE_PRESETS,
   TEMPLATES,
   THEMES,
+  type LatLng,
   type TemplateId,
   type ThemeId,
   type TripData,
@@ -99,8 +101,11 @@ export function ControlPanel({
 
   const [routing, setRouting] = useState(false);
 
-  const applyPresetAndRoute = async (preset: (typeof ROUTE_PRESETS)[number]) => {
-    const base = {
+  const randomRoute = () => {
+    const preset =
+      ROUTE_PRESETS[Math.floor(Math.random() * ROUTE_PRESETS.length)];
+    // Auto-routing effect in CreatorStudio will pick up the coord change.
+    onDataChange({
       ...data,
       startLocation: preset.start,
       endLocation: preset.end,
@@ -110,20 +115,7 @@ export function ControlPanel({
       endCoord: preset.endCoord,
       routeGeometry: null,
       routeSeed: Math.floor(Math.random() * 1_000_000),
-    };
-    onDataChange(base);
-    setRouting(true);
-    const geometry = await fetchDrivingRoute(preset.startCoord, preset.endCoord);
-    setRouting(false);
-    if (geometry) {
-      onDataChange({ ...base, routeGeometry: geometry });
-    }
-  };
-
-  const randomRoute = () => {
-    const preset =
-      ROUTE_PRESETS[Math.floor(Math.random() * ROUTE_PRESETS.length)];
-    void applyPresetAndRoute(preset);
+    });
   };
 
   const refetchRoute = async () => {
@@ -132,6 +124,22 @@ export function ControlPanel({
     setRouting(false);
     if (geometry) onDataChange({ ...data, routeGeometry: geometry });
   };
+
+  const pickStart = (name: string, coord: LatLng) =>
+    onDataChange({
+      ...data,
+      startLocation: name,
+      startCoord: coord,
+      routeGeometry: null,
+    });
+
+  const pickEnd = (name: string, coord: LatLng) =>
+    onDataChange({
+      ...data,
+      endLocation: name,
+      endCoord: coord,
+      routeGeometry: null,
+    });
 
   const unitSpeed = units === "kmh" ? "km/h" : "mph";
   const unitDist = units === "kmh" ? "km" : "mi";
@@ -242,19 +250,19 @@ export function ControlPanel({
           )}
 
           {(has("startLocation") || has("endLocation")) && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               {has("startLocation") && (
-                <Field
+                <LocationAutocomplete
                   label="Start Location"
                   value={data.startLocation}
-                  onChange={(v) => update("startLocation", v)}
+                  onSelect={pickStart}
                 />
               )}
               {has("endLocation") && (
-                <Field
+                <LocationAutocomplete
                   label="End Location"
                   value={data.endLocation}
-                  onChange={(v) => update("endLocation", v)}
+                  onSelect={pickEnd}
                 />
               )}
             </div>
