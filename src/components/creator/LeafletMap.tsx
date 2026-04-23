@@ -3,14 +3,28 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef } from "react";
 import L from "leaflet";
-import type { LatLng } from "./types";
+import { speedColor, type LatLng } from "./types";
 
 type Props = {
   start: LatLng;
   end: LatLng;
   route: LatLng[] | null;
+  speeds: number[] | null;
   accent: string;
 };
+
+function chunkPath(path: LatLng[], numChunks: number): LatLng[][] {
+  if (path.length <= 2 || numChunks <= 1) return [path];
+  const out: LatLng[][] = [];
+  const step = (path.length - 1) / numChunks;
+  for (let i = 0; i < numChunks; i++) {
+    const from = Math.floor(i * step);
+    const to = Math.min(path.length, Math.floor((i + 1) * step) + 1);
+    if (to - from < 2) continue;
+    out.push(path.slice(from, to));
+  }
+  return out;
+}
 
 function makePinIcon(color: string, ring = "#fff") {
   const html = `
@@ -28,7 +42,7 @@ function makePinIcon(color: string, ring = "#fff") {
   });
 }
 
-export function LeafletMap({ start, end, route, accent }: Props) {
+export function LeafletMap({ start, end, route, speeds, accent }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
@@ -79,23 +93,43 @@ export function LeafletMap({ start, end, route, accent }: Props) {
 
     const path: LatLng[] = route && route.length > 0 ? route : [start, end];
 
-    // Glow underlay
-    L.polyline(path, {
-      color: accent,
-      weight: 16,
-      opacity: 0.25,
-      lineCap: "round",
-      lineJoin: "round",
-    }).addTo(layer);
-
-    // Primary line
-    L.polyline(path, {
-      color: accent,
-      weight: 5,
-      opacity: 1,
-      lineCap: "round",
-      lineJoin: "round",
-    }).addTo(layer);
+    if (speeds && speeds.length > 0) {
+      // Heatmap mode: chunk the path and color each chunk by speed.
+      const chunks = chunkPath(path, speeds.length);
+      chunks.forEach((chunk, i) => {
+        const color = speedColor(speeds[i] ?? speeds[speeds.length - 1]);
+        L.polyline(chunk, {
+          color,
+          weight: 14,
+          opacity: 0.2,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(layer);
+        L.polyline(chunk, {
+          color,
+          weight: 5,
+          opacity: 1,
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(layer);
+      });
+    } else {
+      // Default mode: single accent-colored line with a glow underlay.
+      L.polyline(path, {
+        color: accent,
+        weight: 16,
+        opacity: 0.25,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(layer);
+      L.polyline(path, {
+        color: accent,
+        weight: 5,
+        opacity: 1,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(layer);
+    }
 
     L.marker(start, { icon: makePinIcon(accent) }).addTo(layer);
     L.marker(end, { icon: makePinIcon("#FF5277") }).addTo(layer);
@@ -104,7 +138,7 @@ export function LeafletMap({ start, end, route, accent }: Props) {
     map.fitBounds(bounds, { padding: [80, 80], animate: false });
     // fitBounds can occasionally leave the map 1px off — force a resize
     setTimeout(() => map.invalidateSize({ pan: false }), 0);
-  }, [start, end, route, accent]);
+  }, [start, end, route, speeds, accent]);
 
   return (
     <div

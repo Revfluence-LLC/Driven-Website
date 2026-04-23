@@ -5,6 +5,34 @@ import {
   type TemplateProps,
 } from "../types";
 
+function RouteEndpoint({
+  city,
+  region,
+  color,
+}: {
+  city: string;
+  region: string;
+  color: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+      <span style={{ color, fontSize: 26, fontWeight: 700 }}>{city}</span>
+      {region && (
+        <span
+          style={{
+            fontSize: 14,
+            letterSpacing: "2px",
+            color: "rgba(255,255,255,0.55)",
+            marginTop: 2,
+          }}
+        >
+          {region}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function RouteMapStatsTemplate({
   data,
   units,
@@ -92,15 +120,21 @@ export function RouteMapStatsTemplate({
           alignItems: "center",
           gap: 20,
           fontFamily: "var(--font-geist-mono), monospace",
-          fontSize: 26,
-          fontWeight: 600,
           letterSpacing: "2px",
           textTransform: "uppercase",
         }}
       >
-        <span style={{ color: palette.accent }}>{data.startLocation}</span>
-        <span style={{ opacity: 0.5 }}>→</span>
-        <span style={{ color: "#FF8FAB" }}>{data.endLocation}</span>
+        <RouteEndpoint
+          city={data.startLocation}
+          region={data.startRegion}
+          color={palette.accent}
+        />
+        <span style={{ opacity: 0.5, fontSize: 28 }}>→</span>
+        <RouteEndpoint
+          city={data.endLocation}
+          region={data.endRegion}
+          color="#FF8FAB"
+        />
       </div>
 
       {/* Stats grid */}

@@ -8,6 +8,7 @@ const PHOTON_BASE = "https://photon.komoot.io/api/";
 
 export type LocationSuggestion = {
   name: string;
+  region: string;
   secondary: string;
   coord: LatLng;
 };
@@ -30,6 +31,7 @@ export async function searchLocations(
           city?: string;
           state?: string;
           country?: string;
+          countrycode?: string;
           type?: string;
         };
       }>;
@@ -43,14 +45,18 @@ export async function searchLocations(
       const latlng: LatLng = [coord[1], coord[0]];
       const primary = p.name || p.city || "";
       if (!primary) continue;
-      const parts = [
+      // Prefer the state for US locations (more recognizable), otherwise country.
+      const region =
+        p.countrycode === "US" ? p.state ?? p.country ?? "" : p.country ?? p.state ?? "";
+      const secondaryParts = [
         p.city && p.city !== primary ? p.city : null,
         p.state,
         p.country,
       ].filter(Boolean);
       out.push({
         name: primary,
-        secondary: parts.join(", "),
+        region,
+        secondary: secondaryParts.join(", "),
         coord: latlng,
       });
     }

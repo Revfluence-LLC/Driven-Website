@@ -7,7 +7,7 @@ import type { LatLng } from "./types";
 type Props = {
   label: string;
   value: string;
-  onSelect: (name: string, coord: LatLng) => void;
+  onSelect: (name: string, region: string, coord: LatLng) => void;
 };
 
 export function LocationAutocomplete({ label, value, onSelect }: Props) {
@@ -64,7 +64,7 @@ export function LocationAutocomplete({ label, value, onSelect }: Props) {
     setQuery(s.name);
     setOpen(false);
     setSuggestions([]);
-    onSelect(s.name, s.coord);
+    onSelect(s.name, s.region, s.coord);
   };
 
   return (

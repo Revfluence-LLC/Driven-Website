@@ -27,13 +27,50 @@ export type TripData = {
   statValue: string;
   startLocation: string;
   endLocation: string;
+  startRegion: string;
+  endRegion: string;
   expectedMin: number;
   actualMin: number;
   routeSeed: number;
   startCoord: LatLng;
   endCoord: LatLng;
   routeGeometry: LatLng[] | null;
+  // Per-chunk speeds in mph when a heatmap is active; null for a flat accent line.
+  routeSpeeds: number[] | null;
 };
+
+export const HEATMAP_CHUNKS = 20;
+
+// Classic traffic-map palette — kept independent of the theme accent so the
+// heatmap stays legible across color themes.
+export function speedColor(speed: number): string {
+  if (speed >= 75) return "#00E5FF";
+  if (speed >= 55) return "#79FF5B";
+  if (speed >= 40) return "#FFC847";
+  if (speed >= 25) return "#FF9947";
+  return "#FF3355";
+}
+
+export const HEATMAP_LEGEND: Array<{ label: string; color: string }> = [
+  { label: "< 25 mph", color: "#FF3355" },
+  { label: "25–40", color: "#FF9947" },
+  { label: "40–55", color: "#FFC847" },
+  { label: "55–75", color: "#79FF5B" },
+  { label: "75+", color: "#00E5FF" },
+];
+
+// Smoothed random walk: gives natural-looking speed variation across the route.
+export function generateRandomSpeeds(n: number): number[] {
+  const out: number[] = [];
+  let s = 55 + (Math.random() - 0.5) * 30;
+  for (let i = 0; i < n; i++) {
+    s += (Math.random() - 0.5) * 18;
+    if (s < 15) s = 15;
+    if (s > 90) s = 90;
+    out.push(Math.round(s));
+  }
+  return out;
+}
 
 export type TemplateProps = {
   data: TripData;
@@ -182,17 +219,22 @@ export const DEFAULT_TRIP_DATA: TripData = {
   statValue: "127 mph",
   startLocation: "Los Angeles",
   endLocation: "Las Vegas",
+  startRegion: "California",
+  endRegion: "Nevada",
   expectedMin: 261,
   actualMin: 205,
   routeSeed: 7,
   startCoord: [34.0522, -118.2437],
   endCoord: [36.1699, -115.1398],
   routeGeometry: null,
+  routeSpeeds: null,
 };
 
 export type RoutePreset = {
   start: string;
   end: string;
+  startRegion: string;
+  endRegion: string;
   expectedMin: number;
   actualMin: number;
   startCoord: LatLng;
@@ -203,6 +245,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Los Angeles",
     end: "Las Vegas",
+    startRegion: "California",
+    endRegion: "Nevada",
     expectedMin: 261,
     actualMin: 205,
     startCoord: [34.0522, -118.2437],
@@ -211,6 +255,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "San Francisco",
     end: "Lake Tahoe",
+    startRegion: "California",
+    endRegion: "California",
     expectedMin: 218,
     actualMin: 174,
     startCoord: [37.7749, -122.4194],
@@ -219,6 +265,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "New York",
     end: "Boston",
+    startRegion: "New York",
+    endRegion: "Massachusetts",
     expectedMin: 229,
     actualMin: 182,
     startCoord: [40.7128, -74.006],
@@ -227,6 +275,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Miami",
     end: "Orlando",
+    startRegion: "Florida",
+    endRegion: "Florida",
     expectedMin: 213,
     actualMin: 168,
     startCoord: [25.7617, -80.1918],
@@ -235,6 +285,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Seattle",
     end: "Portland",
+    startRegion: "Washington",
+    endRegion: "Oregon",
     expectedMin: 178,
     actualMin: 142,
     startCoord: [47.6062, -122.3321],
@@ -243,6 +295,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Chicago",
     end: "Milwaukee",
+    startRegion: "Illinois",
+    endRegion: "Wisconsin",
     expectedMin: 92,
     actualMin: 76,
     startCoord: [41.8781, -87.6298],
@@ -251,6 +305,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Austin",
     end: "Dallas",
+    startRegion: "Texas",
+    endRegion: "Texas",
     expectedMin: 195,
     actualMin: 156,
     startCoord: [30.2672, -97.7431],
@@ -259,6 +315,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Denver",
     end: "Aspen",
+    startRegion: "Colorado",
+    endRegion: "Colorado",
     expectedMin: 236,
     actualMin: 198,
     startCoord: [39.7392, -104.9903],
@@ -267,6 +325,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "Phoenix",
     end: "San Diego",
+    startRegion: "Arizona",
+    endRegion: "California",
     expectedMin: 359,
     actualMin: 294,
     startCoord: [33.4484, -112.074],
@@ -275,6 +335,8 @@ export const ROUTE_PRESETS: RoutePreset[] = [
   {
     start: "London",
     end: "Brighton",
+    startRegion: "United Kingdom",
+    endRegion: "United Kingdom",
     expectedMin: 105,
     actualMin: 82,
     startCoord: [51.5074, -0.1278],

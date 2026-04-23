@@ -1,6 +1,11 @@
 "use client";
 
-import { THEMES, formatDuration, type TemplateProps } from "../types";
+import {
+  HEATMAP_LEGEND,
+  THEMES,
+  formatDuration,
+  type TemplateProps,
+} from "../types";
 import { LeafletMap } from "../LeafletMapClient";
 
 export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
@@ -85,51 +90,28 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
           start={data.startCoord}
           end={data.endCoord}
           route={data.routeGeometry}
+          speeds={data.routeSpeeds}
           accent={palette.accent}
         />
 
         {/* Start label */}
-        <div
-          style={{
-            position: "absolute",
-            left: 24,
-            top: 24,
-            zIndex: 1000,
-            background: "rgba(0,0,0,0.75)",
-            borderRadius: 12,
-            padding: "10px 18px",
-            fontSize: 20,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            color: "#fff",
-            fontFamily: "var(--font-geist-mono), monospace",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <span style={{ color: palette.accent, marginRight: 10 }}>● START</span>
-          {data.startLocation}
-        </div>
+        <PinLabel
+          accent={palette.accent}
+          kind="START"
+          dotColor={palette.accent}
+          city={data.startLocation}
+          region={data.startRegion}
+          position={{ left: 24, top: 24 }}
+        />
         {/* End label */}
-        <div
-          style={{
-            position: "absolute",
-            right: 24,
-            bottom: 24,
-            zIndex: 1000,
-            background: "rgba(0,0,0,0.75)",
-            borderRadius: 12,
-            padding: "10px 18px",
-            fontSize: 20,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            color: "#fff",
-            fontFamily: "var(--font-geist-mono), monospace",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <span style={{ color: "#FF5277", marginRight: 10 }}>● END</span>
-          {data.endLocation}
-        </div>
+        <PinLabel
+          accent={palette.accent}
+          kind="END"
+          dotColor="#FF5277"
+          city={data.endLocation}
+          region={data.endRegion}
+          position={{ right: 24, bottom: 24 }}
+        />
 
         {/* Attribution (subtle, required for OSM/Carto) */}
         <div
@@ -149,6 +131,60 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
         >
           © OpenStreetMap · CARTO
         </div>
+
+        {/* Heatmap legend */}
+        {data.routeSpeeds && data.routeSpeeds.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: 24,
+              bottom: 24,
+              zIndex: 1000,
+              background: "rgba(0,0,0,0.8)",
+              borderRadius: 12,
+              padding: "12px 18px",
+              backdropFilter: "blur(6px)",
+              fontFamily: "var(--font-geist-mono), monospace",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "3px",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.6)",
+                marginBottom: 8,
+              }}
+            >
+              Speed Heatmap · mph
+            </div>
+            <div style={{ display: "flex", gap: 14 }}>
+              {HEATMAP_LEGEND.map((l) => (
+                <div
+                  key={l.label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 13,
+                    color: "rgba(255,255,255,0.85)",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 16,
+                      height: 4,
+                      borderRadius: 2,
+                      background: l.color,
+                      boxShadow: `0 0 8px ${l.color}`,
+                    }}
+                  />
+                  {l.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Travel time comparison */}
@@ -195,6 +231,82 @@ export function RouteMapRouteTemplate({ data, theme }: TemplateProps) {
           value={formatDuration(data.actualMin)}
           highlight={palette.accent}
         />
+      </div>
+    </div>
+  );
+}
+
+function PinLabel({
+  accent,
+  kind,
+  dotColor,
+  city,
+  region,
+  position,
+}: {
+  accent: string;
+  kind: "START" | "END";
+  dotColor: string;
+  city: string;
+  region: string;
+  position: React.CSSProperties;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        zIndex: 1000,
+        background: "rgba(0,0,0,0.75)",
+        borderRadius: 12,
+        padding: "10px 18px",
+        color: "#fff",
+        fontFamily: "var(--font-geist-mono), monospace",
+        backdropFilter: "blur(6px)",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        ...position,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 14,
+          letterSpacing: "3px",
+          textTransform: "uppercase",
+          color: accent,
+          lineHeight: 1,
+          fontWeight: 600,
+        }}
+      >
+        <span style={{ color: dotColor }}>●</span>
+        {kind}
+      </div>
+      <div style={{ lineHeight: 1.15 }}>
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+          }}
+        >
+          {city}
+        </div>
+        {region && (
+          <div
+            style={{
+              fontSize: 13,
+              letterSpacing: "2px",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.55)",
+            }}
+          >
+            {region}
+          </div>
+        )}
       </div>
     </div>
   );
