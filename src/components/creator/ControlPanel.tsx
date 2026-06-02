@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fetchDrivingRoute } from "./fetchRoute";
 import { LocationAutocomplete } from "./LocationAutocomplete";
 import {
+  CANVAS_DIMENSIONS,
   HEATMAP_CHUNKS,
   ROUTE_PRESETS,
   TEMPLATES,
@@ -40,6 +41,11 @@ const TEMPLATE_FIELDS: Record<TemplateId, ReadonlyArray<keyof TripData | "route-
   ],
   "zero-to-sixty": [
     "tripName",
+    "zeroToSixtySec",
+    "rank",
+    "achievement",
+  ],
+  "zero-to-sixty-badge": [
     "zeroToSixtySec",
     "rank",
     "achievement",
@@ -206,7 +212,8 @@ export function ControlPanel({
                 {t.description}
               </div>
               <div className="mt-2 text-[10px] font-mono tracking-[2px] text-driven-outline uppercase">
-                {t.aspect === "story" ? "1080×1920" : "1080×1080"}
+                {CANVAS_DIMENSIONS[t.aspect].width}×
+                {CANVAS_DIMENSIONS[t.aspect].height}
               </div>
             </button>
           ))}
