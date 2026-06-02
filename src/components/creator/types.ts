@@ -4,6 +4,7 @@ export type TemplateId =
   | "hud-gauge"
   | "trip-stats"
   | "zero-to-sixty"
+  | "zero-to-sixty-badge"
   | "story-stack"
   | "featured-stat-video"
   | "zero-to-sixty-video"
@@ -147,7 +148,7 @@ export type TemplateMeta = {
   id: TemplateId;
   label: string;
   description: string;
-  aspect: "square" | "story";
+  aspect: "square" | "story" | "landscape";
 };
 
 export const TEMPLATES: TemplateMeta[] = [
@@ -168,6 +169,12 @@ export const TEMPLATES: TemplateMeta[] = [
     label: "0-60",
     description: "Acceleration hero card",
     aspect: "square",
+  },
+  {
+    id: "zero-to-sixty-badge",
+    label: "0-60 Badge",
+    description: "Wide badge to drop on a photo",
+    aspect: "landscape",
   },
   {
     id: "featured-stat-video",
@@ -204,6 +211,7 @@ export const TEMPLATES: TemplateMeta[] = [
 export const CANVAS_DIMENSIONS = {
   square: { width: 1080, height: 1080 },
   story: { width: 1080, height: 1920 },
+  landscape: { width: 1350, height: 1080 },
 } as const;
 
 export const DEFAULT_TRIP_DATA: TripData = {

@@ -2,6 +2,7 @@ import type { TemplateId, TemplateProps } from "../types";
 import { HudGaugeTemplate } from "./HudGaugeTemplate";
 import { TripStatsTemplate } from "./TripStatsTemplate";
 import { ZeroToSixtyTemplate } from "./ZeroToSixtyTemplate";
+import { ZeroToSixtyBadgeTemplate } from "./ZeroToSixtyBadgeTemplate";
 import { StoryStackTemplate } from "./StoryStackTemplate";
 import { FeaturedStatVideoTemplate } from "./FeaturedStatVideoTemplate";
 import { ZeroToSixtyVideoTemplate } from "./ZeroToSixtyVideoTemplate";
@@ -13,6 +14,7 @@ const COMPONENTS: Record<TemplateId, (props: TemplateProps) => React.ReactNode> 
     "hud-gauge": HudGaugeTemplate,
     "trip-stats": TripStatsTemplate,
     "zero-to-sixty": ZeroToSixtyTemplate,
+    "zero-to-sixty-badge": ZeroToSixtyBadgeTemplate,
     "story-stack": StoryStackTemplate,
     "featured-stat-video": FeaturedStatVideoTemplate,
     "zero-to-sixty-video": ZeroToSixtyVideoTemplate,
