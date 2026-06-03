@@ -3,7 +3,8 @@ import { THEMES, type TemplateProps } from "../types";
 // Compact 5:4 landscape badge (1350×1080) built to be dropped on top of a
 // photo. The outer frame is transparent with a margin so the rounded dark
 // card keeps clean corners when overlaid; everything is centered like a
-// sticker rather than a full-bleed poster.
+// sticker rather than a full-bleed poster. Sized to sit naturally over a
+// landscape photo, matching the TripRank-style stat badge.
 export function ZeroToSixtyBadgeTemplate({ data, units, theme }: TemplateProps) {
   const palette = THEMES[theme];
   const targetSpeed = units === "kmh" ? "100" : "60";
