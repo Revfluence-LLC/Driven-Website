@@ -40,6 +40,7 @@ type Props = {
   data: TripData;
   units: Units;
   theme: ThemeId;
+  ctaMode?: boolean;
   // False while an async resource the template depends on (e.g. OSRM route)
   // is still loading. Disables the Download button so the export doesn't
   // capture a half-rendered state.
@@ -51,6 +52,7 @@ export function LivePreview({
   data,
   units,
   theme,
+  ctaMode,
   ready = true,
 }: Props) {
   const meta = TEMPLATES.find((t) => t.id === templateId)!;
@@ -170,6 +172,7 @@ export function LivePreview({
               data={data}
               units={units}
               theme={theme}
+              ctaMode={ctaMode}
               frozen={frozen}
             />
           </div>

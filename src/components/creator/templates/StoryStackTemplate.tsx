@@ -5,8 +5,14 @@ import {
   formatSpeed,
   type TemplateProps,
 } from "../types";
+import { BrandBlock } from "./BrandBlock";
 
-export function StoryStackTemplate({ data, units, theme }: TemplateProps) {
+export function StoryStackTemplate({
+  data,
+  units,
+  theme,
+  ctaMode,
+}: TemplateProps) {
   const palette = THEMES[theme];
   const top = formatSpeed(data.topSpeed, units);
   const avg = formatSpeed(data.avgSpeed, units);
@@ -35,35 +41,19 @@ export function StoryStackTemplate({ data, units, theme }: TemplateProps) {
       }}
     >
       {/* Brand */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 28,
-        }}
-      >
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 9999,
-            background: palette.accent,
-            boxShadow: `0 0 36px ${palette.accent}`,
-          }}
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <BrandBlock
+          palette={palette}
+          cta={ctaMode}
+          fontSize={76}
+          letterSpacing={22}
+          dotSize={24}
+          gap={28}
+          glowSize={40}
+          glowAlpha="80"
+          dotGlowSize={36}
+          align="center"
         />
-        <span
-          style={{
-            fontFamily: "var(--font-geist-mono), monospace",
-            letterSpacing: "22px",
-            fontSize: 76,
-            fontWeight: 800,
-            color: palette.accent,
-            textShadow: `0 0 40px ${palette.accent}80`,
-          }}
-        >
-          DRIVEN
-        </span>
       </div>
 
       {/* Trip name hero */}

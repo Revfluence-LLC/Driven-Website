@@ -1,6 +1,12 @@
 import { THEMES, formatSpeed, type TemplateProps } from "../types";
+import { BrandBlock } from "./BrandBlock";
 
-export function HudGaugeTemplate({ data, units, theme }: TemplateProps) {
+export function HudGaugeTemplate({
+  data,
+  units,
+  theme,
+  ctaMode,
+}: TemplateProps) {
   const palette = THEMES[theme];
   const top = formatSpeed(data.topSpeed, units);
   const avg = formatSpeed(data.avgSpeed, units);
@@ -44,31 +50,20 @@ export function HudGaugeTemplate({ data, units, theme }: TemplateProps) {
           right: 0,
           display: "flex",
           justifyContent: "center",
-          gap: 24,
-          alignItems: "center",
         }}
       >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            borderRadius: 9999,
-            background: palette.accent,
-            boxShadow: `0 0 32px ${palette.accent}`,
-          }}
+        <BrandBlock
+          palette={palette}
+          cta={ctaMode}
+          fontSize={56}
+          letterSpacing={18}
+          dotSize={20}
+          gap={24}
+          glowSize={32}
+          glowAlpha="80"
+          dotGlowSize={32}
+          align="center"
         />
-        <span
-          style={{
-            fontFamily: "var(--font-geist-mono), monospace",
-            letterSpacing: "18px",
-            fontSize: 56,
-            fontWeight: 800,
-            color: palette.accent,
-            textShadow: `0 0 32px ${palette.accent}80`,
-          }}
-        >
-          DRIVEN
-        </span>
       </div>
 
       {/* Gauge */}

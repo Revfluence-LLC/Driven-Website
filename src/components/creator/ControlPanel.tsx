@@ -21,10 +21,12 @@ type Props = {
   units: Units;
   templateId: TemplateId;
   theme: ThemeId;
+  ctaMode: boolean;
   data: TripData;
   onUnitsChange: (u: Units) => void;
   onTemplateChange: (t: TemplateId) => void;
   onThemeChange: (t: ThemeId) => void;
+  onCtaModeChange: (v: boolean) => void;
   onDataChange: (d: TripData) => void;
 };
 
@@ -95,10 +97,12 @@ export function ControlPanel({
   units,
   templateId,
   theme,
+  ctaMode,
   data,
   onUnitsChange,
   onTemplateChange,
   onThemeChange,
+  onCtaModeChange,
   onDataChange,
 }: Props) {
   const update = <K extends keyof TripData>(key: K, value: TripData[K]) =>
@@ -242,6 +246,27 @@ export function ControlPanel({
             />
           ))}
         </div>
+      </Section>
+
+      <Section label="Branding">
+        <div className="grid grid-cols-2 gap-2">
+          <ToggleButton
+            active={!ctaMode}
+            onClick={() => onCtaModeChange(false)}
+          >
+            Standard
+          </ToggleButton>
+          <ToggleButton
+            active={ctaMode}
+            onClick={() => onCtaModeChange(true)}
+          >
+            App Store CTA
+          </ToggleButton>
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-driven-outline">
+          CTA mode renders a bigger DRIVEN wordmark with “Available on the App
+          Store” beneath it.
+        </p>
       </Section>
 
       <Section label="Trip Data">
