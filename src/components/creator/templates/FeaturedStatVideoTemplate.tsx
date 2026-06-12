@@ -1,6 +1,7 @@
 "use client";
 
 import { THEMES, type TemplateProps } from "../types";
+import { BrandBlock } from "./BrandBlock";
 import { VideoChrome } from "./videoChrome";
 import { animateNumberLike, useVideoClock } from "./useVideoClock";
 
@@ -10,6 +11,7 @@ export function FeaturedStatVideoTemplate({
   data,
   theme,
   frozen,
+  ctaMode,
 }: TemplateProps) {
   const palette = THEMES[theme];
   const clock = useVideoClock(DURATION, frozen);
@@ -52,31 +54,17 @@ export function FeaturedStatVideoTemplate({
           right: 0,
           display: "flex",
           justifyContent: "center",
-          alignItems: "center",
-          gap: 20,
         }}
       >
-        <div
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: 9999,
-            background: palette.accent,
-            boxShadow: `0 0 28px ${palette.accent}`,
-          }}
+        <BrandBlock
+          palette={palette}
+          cta={ctaMode}
+          fontSize={48}
+          letterSpacing={14}
+          dotSize={18}
+          gap={20}
+          align="center"
         />
-        <span
-          style={{
-            fontFamily: "var(--font-geist-mono), monospace",
-            letterSpacing: "14px",
-            fontSize: 48,
-            fontWeight: 800,
-            color: palette.accent,
-            textShadow: `0 0 24px ${palette.accent}60`,
-          }}
-        >
-          DRIVEN
-        </span>
       </div>
 
       {/* Hero stat */}

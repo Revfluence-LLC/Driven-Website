@@ -78,6 +78,8 @@ export type TemplateProps = {
   units: Units;
   theme: ThemeId;
   frozen?: boolean;
+  // CTA-heavy branding: larger DRIVEN wordmark with an App Store call-out.
+  ctaMode?: boolean;
 };
 
 export type ThemePalette = {

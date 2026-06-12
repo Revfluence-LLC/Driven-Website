@@ -18,6 +18,7 @@ export function CreatorStudio() {
   const [units, setUnits] = useState<Units>("mph");
   const [templateId, setTemplateId] = useState<TemplateId>("hud-gauge");
   const [theme, setTheme] = useState<ThemeId>("cyan");
+  const [ctaMode, setCtaMode] = useState(false);
   const [data, setData] = useState<TripData>(DEFAULT_TRIP_DATA);
 
   // Re-fetch the real driving route whenever start/end coords change while a
@@ -46,10 +47,12 @@ export function CreatorStudio() {
           units={units}
           templateId={templateId}
           theme={theme}
+          ctaMode={ctaMode}
           data={data}
           onUnitsChange={setUnits}
           onTemplateChange={setTemplateId}
           onThemeChange={setTheme}
+          onCtaModeChange={setCtaMode}
           onDataChange={setData}
         />
       </aside>
@@ -60,6 +63,7 @@ export function CreatorStudio() {
           data={data}
           units={units}
           theme={theme}
+          ctaMode={ctaMode}
           ready={
             !ROUTE_TEMPLATES.includes(templateId) || !!data.routeGeometry
           }

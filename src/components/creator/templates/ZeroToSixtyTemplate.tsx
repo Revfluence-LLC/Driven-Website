@@ -1,6 +1,12 @@
 import { THEMES, type TemplateProps } from "../types";
+import { BrandBlock } from "./BrandBlock";
 
-export function ZeroToSixtyTemplate({ data, units, theme }: TemplateProps) {
+export function ZeroToSixtyTemplate({
+  data,
+  units,
+  theme,
+  ctaMode,
+}: TemplateProps) {
   const palette = THEMES[theme];
   const targetSpeed = units === "kmh" ? "100" : "60";
   const unitLabel = units === "kmh" ? "km/h" : "mph";
@@ -30,29 +36,14 @@ export function ZeroToSixtyTemplate({ data, units, theme }: TemplateProps) {
           alignItems: "center",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: 9999,
-              background: palette.accent,
-              boxShadow: `0 0 28px ${palette.accent}`,
-            }}
-          />
-          <span
-            style={{
-              fontFamily: "var(--font-geist-mono), monospace",
-              letterSpacing: "14px",
-              fontSize: 48,
-              fontWeight: 800,
-              color: palette.accent,
-              textShadow: `0 0 24px ${palette.accent}60`,
-            }}
-          >
-            DRIVEN
-          </span>
-        </div>
+        <BrandBlock
+          palette={palette}
+          cta={ctaMode}
+          fontSize={48}
+          letterSpacing={14}
+          dotSize={18}
+          gap={20}
+        />
         <div
           style={{
             fontFamily: "var(--font-geist-mono), monospace",

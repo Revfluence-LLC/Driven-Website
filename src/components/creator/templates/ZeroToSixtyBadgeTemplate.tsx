@@ -1,11 +1,17 @@
 import { THEMES, type TemplateProps } from "../types";
+import { BrandBlock } from "./BrandBlock";
 
 // Compact 5:4 landscape badge (1350×1080) built to be dropped on top of a
 // photo. The outer frame is transparent with a margin so the rounded dark
 // card keeps clean corners when overlaid; everything is centered like a
 // sticker rather than a full-bleed poster. Sized to sit naturally over a
 // landscape photo, matching the TripRank-style stat badge.
-export function ZeroToSixtyBadgeTemplate({ data, units, theme }: TemplateProps) {
+export function ZeroToSixtyBadgeTemplate({
+  data,
+  units,
+  theme,
+  ctaMode,
+}: TemplateProps) {
   const palette = THEMES[theme];
   const targetSpeed = units === "kmh" ? "100" : "60";
   const unitLabel = units === "kmh" ? "km/h" : "mph";
@@ -43,29 +49,16 @@ export function ZeroToSixtyBadgeTemplate({ data, units, theme }: TemplateProps) 
         }}
       >
         {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 9999,
-              background: palette.accent,
-              boxShadow: `0 0 24px ${palette.accent}`,
-            }}
-          />
-          <span
-            style={{
-              fontFamily: "var(--font-geist-mono), monospace",
-              letterSpacing: "14px",
-              fontSize: 60,
-              fontWeight: 800,
-              color: palette.accent,
-              textShadow: `0 0 24px ${palette.accent}60`,
-            }}
-          >
-            DRIVEN
-          </span>
-        </div>
+        <BrandBlock
+          palette={palette}
+          cta={ctaMode}
+          fontSize={60}
+          letterSpacing={14}
+          dotSize={20}
+          gap={18}
+          dotGlowSize={24}
+          align="center"
+        />
 
         {/* Stat box */}
         <div
