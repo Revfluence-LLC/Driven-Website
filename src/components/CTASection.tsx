@@ -12,7 +12,9 @@ export function CTASection() {
           telemetry.
         </p>
         <a
-          href="#"
+          href="https://apps.apple.com/us/app/driven-speed-tracker/id6762046780"
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-md bg-driven-accent px-8 py-4 text-sm font-bold uppercase tracking-[3px] text-driven-bg-deep transition-all hover:scale-105 glow-accent"
         >
           Download Free

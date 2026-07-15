@@ -30,7 +30,9 @@ export function HeroSection() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <a
-                href="#"
+                href="https://apps.apple.com/us/app/driven-speed-tracker/id6762046780"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-md bg-driven-accent px-6 py-3 text-sm font-bold uppercase tracking-[2px] text-driven-bg-deep transition-all hover:scale-105 glow-accent"
               >
                 Download on App Store
