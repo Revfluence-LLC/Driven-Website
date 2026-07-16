@@ -3,10 +3,10 @@ import { SpeedGauge } from "./SpeedGauge";
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.05)_0%,transparent_70%)]" />
+      {/* Background gradient — decorative only; must not intercept clicks */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,229,255,0.05)_0%,transparent_70%)]" />
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Content */}
           <div className="flex-1 text-center lg:text-left">
