@@ -42,6 +42,9 @@ export function Footer() {
               <Link href="/terms" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
                 Terms of Service
               </Link>
+              <Link href="/delete-account" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
+                Delete Account
+              </Link>
             </div>
           </div>
         </div>
