@@ -1,11 +1,11 @@
 "use client";
 
-import { THEMES, type TemplateProps } from "../types";
+import { THEMES, VIDEO_TEMPLATE_SPECS, type TemplateProps } from "../types";
 import { BrandBlock } from "./BrandBlock";
 import { VideoChrome } from "./videoChrome";
 import { easeOutCubic, useVideoClock } from "./useVideoClock";
 
-const DURATION = 8;
+const DURATION = VIDEO_TEMPLATE_SPECS["zero-to-sixty-video"].durationSec;
 
 export function ZeroToSixtyVideoTemplate({
   data,
@@ -13,12 +13,13 @@ export function ZeroToSixtyVideoTemplate({
   theme,
   frozen,
   ctaMode,
+  timeSec,
 }: TemplateProps) {
   const palette = THEMES[theme];
   const target = units === "kmh" ? "100" : "60";
   const unitLabel = units === "kmh" ? "km/h" : "mph";
 
-  const clock = useVideoClock(DURATION, frozen);
+  const clock = useVideoClock(DURATION, frozen, timeSec);
   // Arc + number fill during the first 70% of the clip, then hold.
   const fillProgress = easeOutCubic(Math.min(clock.progress / 0.7, 1));
   const displayedSec = data.zeroToSixtySec * fillProgress;
@@ -187,7 +188,7 @@ export function ZeroToSixtyVideoTemplate({
         timecode={clock.timecode}
         progress={clock.progress}
         label="0-60 RUN"
-        animated={!frozen}
+        elapsed={clock.elapsed}
       />
     </div>
   );

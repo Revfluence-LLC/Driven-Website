@@ -14,13 +14,19 @@ function fmt(sec: number) {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
+// Drives a template's animation. Normally free-runs off requestAnimationFrame,
+// but when `timeSec` is supplied the clock is fully controlled by the caller —
+// that's how the MP4 exporter renders one deterministic frame at a time.
 export function useVideoClock(
   duration: number,
   frozen: boolean | undefined,
+  timeSec?: number,
 ): VideoClock {
+  const controlled = timeSec != null;
   const [elapsed, setElapsed] = useState(frozen ? duration : 0);
 
   useEffect(() => {
+    if (controlled) return;
     if (frozen) {
       setElapsed(duration);
       return;
@@ -34,13 +40,16 @@ export function useVideoClock(
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [frozen, duration]);
+  }, [controlled, frozen, duration]);
 
-  const progress = Math.min(elapsed / duration, 1);
+  const current = controlled
+    ? Math.max(0, Math.min(timeSec, duration))
+    : elapsed;
+  const progress = Math.min(current / duration, 1);
   return {
-    elapsed,
+    elapsed: current,
     progress,
-    timecode: `${fmt(elapsed)} / ${fmt(duration)}`,
+    timecode: `${fmt(current)} / ${fmt(duration)}`,
   };
 }
 

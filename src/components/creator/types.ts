@@ -80,7 +80,27 @@ export type TemplateProps = {
   frozen?: boolean;
   // CTA-heavy branding: larger DRIVEN wordmark with an App Store call-out.
   ctaMode?: boolean;
+  // When set, a motion template renders the exact frame at this time (in
+  // seconds) instead of running its own requestAnimationFrame clock. The MP4
+  // exporter drives this to render deterministic, evenly-spaced frames.
+  timeSec?: number;
 };
+
+export type VideoSpec = {
+  durationSec: number;
+  fps: number;
+};
+
+// Templates listed here animate, so they export as MP4 instead of PNG.
+// The duration is the length of one loop of the template's own animation.
+export const VIDEO_TEMPLATE_SPECS = {
+  "featured-stat-video": { durationSec: 18, fps: 30 },
+  "zero-to-sixty-video": { durationSec: 8, fps: 30 },
+} as const satisfies Partial<Record<TemplateId, VideoSpec>>;
+
+export function videoSpecFor(id: TemplateId): VideoSpec | null {
+  return (VIDEO_TEMPLATE_SPECS as Partial<Record<TemplateId, VideoSpec>>)[id] ?? null;
+}
 
 export type ThemePalette = {
   id: ThemeId;

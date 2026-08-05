@@ -3,20 +3,32 @@ import type { ThemePalette } from "../types";
 // Video-style UI chrome — letterbox bars, play icon, timecode, progress, scanlines.
 // Inline styles so html-to-image captures them.
 
+const BLINK_PERIOD = 1.1;
+const SCAN_PERIOD = 6;
+const SCAN_DISTANCE = 120;
+
 export function VideoChrome({
   palette,
   timecode,
   progress,
   label,
-  animated,
+  elapsed,
 }: {
   palette: ThemePalette;
   timecode: string;
   progress: number;
   label: string;
-  animated?: boolean;
+  // Clock position in seconds. The REC blink and scanline drift are derived
+  // from this rather than CSS keyframes: the MP4 exporter renders each frame
+  // into a detached tree where CSS animations never advance, so anything
+  // keyframe-driven would come out frozen on frame 0.
+  elapsed: number;
 }) {
   const pct = Math.max(0, Math.min(1, progress)) * 100;
+  // Cosine ease matching the old 1 → 0.25 → 1 blink.
+  const blinkOpacity =
+    0.625 + 0.375 * Math.cos((2 * Math.PI * elapsed) / BLINK_PERIOD);
+  const scanOffset = ((elapsed / SCAN_PERIOD) % 1) * SCAN_DISTANCE;
   return (
     <>
       {/* Scanlines (optionally scrolling) */}
@@ -29,8 +41,8 @@ export function VideoChrome({
           backgroundImage:
             "repeating-linear-gradient(180deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px)",
           mixBlendMode: "overlay",
-          animation: animated ? "driven-scan 6s linear infinite" : undefined,
-          backgroundSize: "100% 120px",
+          backgroundSize: `100% ${SCAN_DISTANCE}px`,
+          backgroundPosition: `0 ${scanOffset}px`,
         }}
       />
 
@@ -62,7 +74,7 @@ export function VideoChrome({
               borderRadius: 9999,
               background: "#FF3355",
               boxShadow: "0 0 14px #FF3355",
-              animation: animated ? "driven-blink 1.1s ease-in-out infinite" : undefined,
+              opacity: blinkOpacity,
             }}
           />
           <span>REC · {label}</span>
@@ -147,17 +159,6 @@ export function VideoChrome({
           />
         </div>
       </div>
-
-      <style>{`
-        @keyframes driven-blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.25; }
-        }
-        @keyframes driven-scan {
-          0% { background-position: 0 0; }
-          100% { background-position: 0 120px; }
-        }
-      `}</style>
     </>
   );
 }

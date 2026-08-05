@@ -1,23 +1,27 @@
 "use client";
 
-import { THEMES, type TemplateProps } from "../types";
+import { THEMES, VIDEO_TEMPLATE_SPECS, type TemplateProps } from "../types";
 import { BrandBlock } from "./BrandBlock";
 import { VideoChrome } from "./videoChrome";
 import { animateNumberLike, useVideoClock } from "./useVideoClock";
 
-const DURATION = 18;
+const DURATION = VIDEO_TEMPLATE_SPECS["featured-stat-video"].durationSec;
 
 export function FeaturedStatVideoTemplate({
   data,
   theme,
   frozen,
   ctaMode,
+  timeSec,
 }: TemplateProps) {
   const palette = THEMES[theme];
-  const clock = useVideoClock(DURATION, frozen);
+  const clock = useVideoClock(DURATION, frozen, timeSec);
   // Number counter fills during the first 55% of the clip, then holds.
   const fillProgress = Math.min(clock.progress / 0.55, 1);
   const displayedValue = animateNumberLike(fillProgress, data.statValue);
+  // Rank pill fades in as the counter lands. Computed rather than done with a
+  // CSS transition so each exported frame is self-contained.
+  const pillOpacity = Math.min(Math.max((fillProgress - 0.9) / 0.1, 0), 1);
 
   return (
     <div
@@ -117,8 +121,7 @@ export function FeaturedStatVideoTemplate({
             fontWeight: 800,
             letterSpacing: "3px",
             textTransform: "uppercase",
-            opacity: fillProgress > 0.9 ? 1 : 0,
-            transition: "opacity 400ms ease-out",
+            opacity: pillOpacity,
           }}
         >
           {data.rank} · {data.achievement}
@@ -130,7 +133,7 @@ export function FeaturedStatVideoTemplate({
         timecode={clock.timecode}
         progress={clock.progress}
         label={data.tripName}
-        animated={!frozen}
+        elapsed={clock.elapsed}
       />
     </div>
   );

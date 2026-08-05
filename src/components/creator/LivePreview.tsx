@@ -2,16 +2,33 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, X } from "lucide-react";
 import {
   CANVAS_DIMENSIONS,
   TEMPLATES,
+  videoSpecFor,
   type TemplateId,
   type ThemeId,
   type TripData,
   type Units,
 } from "./types";
 import { RenderTemplate } from "./templates/registry";
+
+// Kicks off a browser download for a blob or data URL. The anchor is attached
+// to the document because Firefox ignores clicks on detached anchors.
+function triggerDownload(href: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+}
 
 // Resolve once every <img> inside `node` has finished loading (or errored).
 // Caps at 4s so a single hanging tile can't block the download forever.
@@ -57,12 +74,16 @@ export function LivePreview({
 }: Props) {
   const meta = TEMPLATES.find((t) => t.id === templateId)!;
   const dims = CANVAS_DIMENSIONS[meta.aspect];
+  const videoSpec = videoSpecFor(templateId);
 
   const frameRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [scale, setScale] = useState(0.5);
   const [downloading, setDownloading] = useState(false);
   const [frozen, setFrozen] = useState(false);
+  // 0..1 while an MP4 export is encoding; null for still exports.
+  const [progress, setProgress] = useState<number | null>(null);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -79,7 +100,57 @@ export function LivePreview({
     return () => observer.disconnect();
   }, [dims.width, dims.height]);
 
-  const handleDownload = async () => {
+  // Animated templates encode to MP4; still templates snapshot to PNG.
+  const handleDownload = () =>
+    videoSpec ? handleVideoDownload() : handleImageDownload();
+
+  const handleVideoDownload = async () => {
+    setDownloading(true);
+    setProgress(0);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let objectUrl: string | null = null;
+    try {
+      const { exportTemplateVideo, VideoExportUnsupportedError } = await import(
+        "./exportVideo"
+      );
+      try {
+        const blob = await exportTemplateVideo({
+          templateId,
+          data,
+          units,
+          theme,
+          ctaMode,
+          signal: controller.signal,
+          onProgress: ({ frame, totalFrames }) =>
+            setProgress(frame / totalFrames),
+        });
+        objectUrl = URL.createObjectURL(blob);
+        triggerDownload(objectUrl, `driven-${templateId}-${timestamp()}.mp4`);
+      } catch (err) {
+        if (err instanceof VideoExportUnsupportedError) {
+          alert(`${err.message} Try the latest Chrome, Edge, or Safari.`);
+          return;
+        }
+        throw err;
+      }
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
+      console.error("[creator] video export failed", err);
+      alert("Couldn't export the video. See console for details.");
+    } finally {
+      // Revoke well after the download has been handed to the browser.
+      if (objectUrl) {
+        const url = objectUrl;
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      }
+      abortRef.current = null;
+      setDownloading(false);
+      setProgress(null);
+    }
+  };
+
+  const handleImageDownload = async () => {
     const node = captureRef.current;
     if (!node) return;
     setDownloading(true);
@@ -107,11 +178,7 @@ export function LivePreview({
           margin: "0",
         },
       });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      a.download = `driven-${templateId}-${stamp}.png`;
-      a.click();
+      triggerDownload(dataUrl, `driven-${templateId}-${timestamp()}.png`);
     } catch (err) {
       console.error("[creator] download failed", err);
       alert("Couldn't export the image. See console for details.");
@@ -132,20 +199,50 @@ export function LivePreview({
             {meta.label} · {dims.width}×{dims.height}
           </p>
         </div>
-        <button
-          onClick={handleDownload}
-          disabled={downloading || !ready}
-          title={!ready ? "Waiting for the route to finish loading…" : undefined}
-          className="inline-flex items-center gap-2 rounded-md bg-driven-accent px-4 py-2 text-sm font-bold uppercase tracking-[2px] text-driven-bg-deep transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 glow-accent-sm"
-        >
-          {downloading || !ready ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          {downloading && videoSpec && (
+            <button
+              onClick={() => abortRef.current?.abort()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-driven-surface-low px-3 py-2 text-xs font-mono uppercase tracking-[2px] text-driven-text-secondary transition-colors hover:border-white/30 hover:text-driven-text"
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancel
+            </button>
           )}
-          {downloading ? "Exporting" : !ready ? "Routing…" : "Download"}
-        </button>
+          <button
+            onClick={handleDownload}
+            disabled={downloading || !ready}
+            title={
+              !ready ? "Waiting for the route to finish loading…" : undefined
+            }
+            className="inline-flex items-center gap-2 rounded-md bg-driven-accent px-4 py-2 text-sm font-bold uppercase tracking-[2px] text-driven-bg-deep transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 glow-accent-sm"
+          >
+            {downloading || !ready ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {downloading
+              ? progress != null
+                ? `Encoding ${Math.round(progress * 100)}%`
+                : "Exporting"
+              : !ready
+                ? "Routing…"
+                : videoSpec
+                  ? "Download MP4"
+                  : "Download PNG"}
+          </button>
+        </div>
       </div>
+
+      {downloading && progress != null && (
+        <div className="h-0.5 w-full bg-white/5">
+          <div
+            className="h-full bg-driven-accent transition-[width] duration-150"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+      )}
 
       <div
         ref={frameRef}
@@ -180,7 +277,10 @@ export function LivePreview({
       </div>
 
       <div className="border-t border-white/5 px-4 py-3 text-xs text-driven-outline">
-        Preview is a scaled render — exports at full {dims.width}×{dims.height}.
+        Preview is a scaled render — exports at full {dims.width}×{dims.height}
+        {videoSpec
+          ? ` MP4 · ${videoSpec.durationSec}s · ${videoSpec.fps}fps. Encoding runs in your browser and takes a moment.`
+          : " PNG."}
       </div>
     </div>
   );
