@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { Download, Loader2, X } from "lucide-react";
 import {
   CANVAS_DIMENSIONS,
@@ -13,44 +12,12 @@ import {
   type Units,
 } from "./types";
 import { RenderTemplate } from "./templates/registry";
-
-// Kicks off a browser download for a blob or data URL. The anchor is attached
-// to the document because Firefox ignores clicks on detached anchors.
-function triggerDownload(href: string, filename: string) {
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = filename;
-  a.style.display = "none";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-function timestamp() {
-  return new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-}
-
-// Resolve once every <img> inside `node` has finished loading (or errored).
-// Caps at 4s so a single hanging tile can't block the download forever.
-function waitForImagesLoaded(node: HTMLElement, timeoutMs = 4000) {
-  const imgs = Array.from(node.querySelectorAll("img"));
-  const pending = imgs.filter(
-    (img) => !(img.complete && img.naturalHeight > 0),
-  );
-  if (pending.length === 0) return Promise.resolve();
-  return Promise.race([
-    Promise.all(
-      pending.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            img.addEventListener("load", () => resolve(), { once: true });
-            img.addEventListener("error", () => resolve(), { once: true });
-          }),
-      ),
-    ).then(() => undefined),
-    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
-  ]);
-}
+import {
+  captureNodeToPng,
+  nextPaint,
+  timestamp,
+  triggerDownload,
+} from "./exportImage";
 
 type Props = {
   templateId: TemplateId;
@@ -155,29 +122,11 @@ export function LivePreview({
     if (!node) return;
     setDownloading(true);
     setFrozen(true);
-    // Wait two animation frames so React renders the frozen state and the
-    // browser paints it before html-to-image snapshots the DOM.
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    );
-    // Wait for any map tiles / external images to finish loading. Without
-    // this, a fresh route template can get captured before OSM tiles arrive.
-    await waitForImagesLoaded(node);
+    // Let React render the frozen state and the browser paint it before
+    // html-to-image snapshots the DOM.
+    await nextPaint();
     try {
-      const dataUrl = await toPng(node, {
-        width: dims.width,
-        height: dims.height,
-        pixelRatio: 1,
-        // cacheBust rewrites image URLs with a timestamp query param, which
-        // defeats the browser's tile cache and can trigger CORS failures on
-        // Carto tiles. Tiles already bust cache via their own URL scheme.
-        cacheBust: false,
-        style: {
-          transform: "none",
-          transformOrigin: "top left",
-          margin: "0",
-        },
-      });
+      const dataUrl = await captureNodeToPng(node, dims.width, dims.height);
       triggerDownload(dataUrl, `driven-${templateId}-${timestamp()}.png`);
     } catch (err) {
       console.error("[creator] download failed", err);

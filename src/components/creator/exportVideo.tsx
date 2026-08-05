@@ -1,8 +1,9 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { getFontEmbedCSS, toSvg } from "html-to-image";
+import { getFontEmbedCSS } from "html-to-image";
 import type { Options } from "html-to-image/lib/types";
 import {
   BufferTarget,
@@ -23,20 +24,11 @@ import {
   type Units,
 } from "./types";
 import { RenderTemplate } from "./templates/registry";
+import { rasterizeInto } from "./exportImage";
 
 export type VideoExportProgress = {
   frame: number;
   totalFrames: number;
-};
-
-export type VideoExportOptions = {
-  templateId: TemplateId;
-  data: TripData;
-  units: Units;
-  theme: ThemeId;
-  ctaMode?: boolean;
-  signal?: AbortSignal;
-  onProgress?: (progress: VideoExportProgress) => void;
 };
 
 // Thrown when the browser has no usable WebCodecs video encoder. The caller
@@ -62,34 +54,6 @@ function abortError() {
   return new DOMException("Video export cancelled", "AbortError");
 }
 
-// Rasterizes `node` straight into `ctx`.
-//
-// This is html-to-image's own toCanvas() minus two things: the intermediate
-// canvas it allocates per call, and the requestAnimationFrame it waits on after
-// decoding. That rAF matters — browsers pause rAF in hidden tabs, so relying on
-// it would freeze a multi-hundred-frame export the moment the user switched
-// tabs.
-async function rasterizeInto(
-  node: HTMLElement,
-  options: Options,
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-) {
-  const dataUrl = await toSvg(node, options);
-  const img = new Image();
-  img.decoding = "sync";
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Could not rasterize frame"));
-    img.src = dataUrl;
-  });
-  // Guarantees the bitmap is ready before we draw it. Some browsers reject
-  // decode() for SVG sources, where the load event is already sufficient.
-  await img.decode().catch(() => {});
-  ctx.drawImage(img, 0, 0, width, height);
-}
-
 // Probes codecs one at a time so a browser that throws on one candidate
 // (rather than returning "unsupported") doesn't take the others down with it.
 async function pickCodec(width: number, height: number) {
@@ -105,45 +69,49 @@ async function pickCodec(width: number, height: number) {
   return null;
 }
 
+export type FrameEncodeOptions = {
+  width: number;
+  height: number;
+  durationSec: number;
+  fps: number;
+  // Returns the tree to render for a given point on the clip's timeline.
+  renderFrame: (timeSec: number) => ReactNode;
+  signal?: AbortSignal;
+  onProgress?: (progress: VideoExportProgress) => void;
+};
+
 /**
- * Renders an animated template frame-by-frame and encodes it to an MP4.
+ * Renders a React tree frame-by-frame and encodes it to an MP4.
  *
  * Frames are rendered into a detached React root rather than captured off the
- * live preview: that lets us drive the template's clock to an exact timestamp
- * per frame (`timeSec`) and rasterize as slowly as we need to without the
- * output ending up in slow motion. Each frame is handed to the encoder with an
- * explicit presentation timestamp, so wall-clock rasterization speed has no
- * effect on playback speed.
+ * live preview: that lets us drive the animation to an exact timestamp per
+ * frame and rasterize as slowly as we need to without the output ending up in
+ * slow motion. Each frame is handed to the encoder with an explicit
+ * presentation timestamp, so wall-clock rasterization speed has no effect on
+ * playback speed.
  */
-export async function exportTemplateVideo({
-  templateId,
-  data,
-  units,
-  theme,
-  ctaMode,
+export async function encodeReactFramesToMp4({
+  width,
+  height,
+  durationSec,
+  fps,
+  renderFrame,
   signal,
   onProgress,
-}: VideoExportOptions): Promise<Blob> {
-  const spec = videoSpecFor(templateId);
-  if (!spec) {
-    throw new Error(`Template "${templateId}" is not an animated template`);
-  }
-
+}: FrameEncodeOptions): Promise<Blob> {
   if (typeof window === "undefined" || typeof VideoEncoder === "undefined") {
     throw new VideoExportUnsupportedError(
       "This browser doesn't support the WebCodecs video encoder.",
     );
   }
 
-  const meta = TEMPLATES.find((t) => t.id === templateId)!;
-  const dims = CANVAS_DIMENSIONS[meta.aspect];
-  const totalFrames = Math.round(spec.durationSec * spec.fps);
-  const frameDuration = 1 / spec.fps;
+  const totalFrames = Math.round(durationSec * fps);
+  const frameDuration = 1 / fps;
 
-  const codec = await pickCodec(dims.width, dims.height);
+  const codec = await pickCodec(width, height);
   if (!codec) {
     throw new VideoExportUnsupportedError(
-      `This browser can't encode ${dims.width}×${dims.height} video.`,
+      `This browser can't encode ${width}×${height} video.`,
     );
   }
 
@@ -155,15 +123,15 @@ export async function exportTemplateVideo({
   host.style.cssText =
     "position:fixed;top:0;left:-200vw;width:0;height:0;overflow:hidden;pointer-events:none;z-index:-1;";
   const frame = document.createElement("div");
-  frame.style.cssText = `width:${dims.width}px;height:${dims.height}px;`;
+  frame.style.cssText = `width:${width}px;height:${height}px;`;
   host.appendChild(frame);
   document.body.appendChild(host);
 
   const root = createRoot(frame);
 
   const canvas = document.createElement("canvas");
-  canvas.width = dims.width;
-  canvas.height = dims.height;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) throw new Error("Could not create a 2D canvas context");
 
@@ -178,21 +146,10 @@ export async function exportTemplateVideo({
     quality: QUALITY,
     keyFrameInterval: 2,
   });
-  output.addVideoTrack(source, { frameRate: spec.fps });
+  output.addVideoTrack(source, { frameRate: fps });
 
-  const renderFrame = (timeSec: number) => {
-    flushSync(() => {
-      root.render(
-        <RenderTemplate
-          id={templateId}
-          data={data}
-          units={units}
-          theme={theme}
-          ctaMode={ctaMode}
-          timeSec={timeSec}
-        />,
-      );
-    });
+  const commit = (timeSec: number) => {
+    flushSync(() => root.render(renderFrame(timeSec)));
   };
 
   let started = false;
@@ -200,12 +157,12 @@ export async function exportTemplateVideo({
     // Prime the tree, then resolve @font-face embeds once. Without this,
     // html-to-image re-fetches and re-inlines the webfonts on every single
     // frame, which dominates export time.
-    renderFrame(0);
+    commit(0);
     const fontEmbedCSS = await getFontEmbedCSS(frame);
 
     const captureOptions: Options = {
-      width: dims.width,
-      height: dims.height,
+      width,
+      height,
       pixelRatio: 1,
       cacheBust: false,
       fontEmbedCSS,
@@ -218,8 +175,8 @@ export async function exportTemplateVideo({
       if (signal?.aborted) throw abortError();
 
       const timeSec = i * frameDuration;
-      renderFrame(timeSec);
-      await rasterizeInto(frame, captureOptions, ctx, dims.width, dims.height);
+      commit(timeSec);
+      await rasterizeInto(frame, captureOptions, ctx, width, height);
 
       // Awaiting applies encoder backpressure so we don't queue up hundreds of
       // uncompressed frames in memory.
@@ -244,4 +201,51 @@ export async function exportTemplateVideo({
       host.remove();
     }, 0);
   }
+}
+
+export type VideoExportOptions = {
+  templateId: TemplateId;
+  data: TripData;
+  units: Units;
+  theme: ThemeId;
+  ctaMode?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (progress: VideoExportProgress) => void;
+};
+
+/** Encodes one of the animated card templates. */
+export async function exportTemplateVideo({
+  templateId,
+  data,
+  units,
+  theme,
+  ctaMode,
+  signal,
+  onProgress,
+}: VideoExportOptions): Promise<Blob> {
+  const spec = videoSpecFor(templateId);
+  if (!spec) {
+    throw new Error(`Template "${templateId}" is not an animated template`);
+  }
+  const meta = TEMPLATES.find((t) => t.id === templateId)!;
+  const dims = CANVAS_DIMENSIONS[meta.aspect];
+
+  return encodeReactFramesToMp4({
+    width: dims.width,
+    height: dims.height,
+    durationSec: spec.durationSec,
+    fps: spec.fps,
+    signal,
+    onProgress,
+    renderFrame: (timeSec) => (
+      <RenderTemplate
+        id={templateId}
+        data={data}
+        units={units}
+        theme={theme}
+        ctaMode={ctaMode}
+        timeSec={timeSec}
+      />
+    ),
+  });
 }
