@@ -27,6 +27,15 @@ export function Footer() {
               <Link href="/#features" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
                 Features
               </Link>
+              <Link href="/speedometer" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
+                Online Speedometer
+              </Link>
+              <Link href="/speed-converter" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
+                Speed Converter
+              </Link>
+              <Link href="/guides" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
+                Guides
+              </Link>
               <Link href="/support" className="block text-sm text-driven-text-secondary hover:text-driven-accent transition-colors">
                 Support
               </Link>

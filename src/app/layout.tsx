@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/next";
+import { APP_STORE_ID, SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,22 +17,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Driven — Precision Speed Tracker",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Speedometer App & Free Online GPS Speedometer | Driven",
+    template: "%s | Driven",
+  },
   description:
-    "Track your speed in real-time, record trips automatically, and review your driving history with precision GPS telemetry.",
-  metadataBase: new URL("https://driven-app.com"),
+    "Check your speed with a free online GPS speedometer, or get the Speedometer app for iPhone: HUD, speed alerts, automatic trip recording, and a 0–60 timer.",
+  applicationName: "Driven",
   openGraph: {
-    title: "Driven — Precision Speed Tracker",
+    siteName: "Driven",
+    title: "Speedometer App & Free Online GPS Speedometer",
     description:
-      "Track your speed in real-time, record trips automatically, and review your driving history.",
+      "Check your speed in MPH or km/h for free, or track every trip with the Speedometer app for iPhone.",
     type: "website",
+    url: "/",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Driven — Precision Speed Tracker",
+    title: "Speedometer App & Free Online GPS Speedometer",
     description:
-      "Track your speed in real-time, record trips automatically, and review your driving history.",
+      "Check your speed in MPH or km/h for free, or track every trip with the Speedometer app for iPhone.",
   },
+  itunes: { appId: APP_STORE_ID },
 };
 
 export default function RootLayout({

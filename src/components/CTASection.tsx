@@ -1,3 +1,5 @@
+import { APP_STORE_URL } from "@/lib/site";
+
 export function CTASection() {
   return (
     <section className="relative py-20 sm:py-28">
@@ -8,19 +10,18 @@ export function CTASection() {
           Ready to Hit the Road?
         </h2>
         <p className="text-driven-text-secondary max-w-md mx-auto mb-8">
-          Download Driven and start tracking your speed with precision GPS
-          telemetry.
+          Download Speedometer: Speed Monitor and start tracking your speed with precision GPS.
         </p>
         <a
-          href="https://apps.apple.com/us/app/driven-speed-tracker/id6762046780"
+          href={APP_STORE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 rounded-md bg-driven-accent px-8 py-4 text-sm font-bold uppercase tracking-[3px] text-driven-bg-deep transition-all hover:scale-105 glow-accent"
         >
-          Download Free
+          Download on the App Store
         </a>
         <p className="mt-4 text-xs text-driven-outline">
-          Available on iOS 17.0 and later
+          For iPhone · iOS 17.0 and later
         </p>
       </div>
     </section>

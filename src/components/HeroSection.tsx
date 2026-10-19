@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { SpeedGauge } from "./SpeedGauge";
+import { APP_STORE_URL } from "@/lib/site";
 
 export function HeroSection() {
   return (
@@ -13,36 +15,36 @@ export function HeroSection() {
             <div className="inline-flex items-center gap-2 rounded-full border border-driven-accent/30 bg-driven-accent/5 px-4 py-1.5 mb-6">
               <span className="h-2 w-2 rounded-full bg-driven-green animate-pulse" />
               <span className="text-xs font-mono tracking-[2px] text-driven-accent uppercase">
-                iOS Speed Tracker
+                Speedometer for iPhone
               </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Track Your Speed
+              The Speedometer App
               <br />
-              <span className="text-driven-accent">With Precision</span>
+              <span className="text-driven-accent">That Tracks With Precision</span>
             </h1>
 
             <p className="text-lg text-driven-text-secondary max-w-lg mx-auto lg:mx-0 mb-8">
-              Real-time GPS speed tracking, automatic trip recording, and detailed
-              driving history — all in a beautiful, distraction-free interface.
+              Accurate GPS speed in MPH or km/h, a windshield HUD, speed alerts, a 0–60 timer, and
+              automatic trip recording — all private, all on your iPhone.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <a
-                href="https://apps.apple.com/us/app/driven-speed-tracker/id6762046780"
+                href={APP_STORE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-md bg-driven-accent px-6 py-3 text-sm font-bold uppercase tracking-[2px] text-driven-bg-deep transition-all hover:scale-105 glow-accent"
               >
                 Download on App Store
               </a>
-              <a
-                href="#features"
+              <Link
+                href="/speedometer"
                 className="inline-flex items-center justify-center gap-2 rounded-md border border-white/10 px-6 py-3 text-sm font-medium text-driven-text transition-all hover:border-driven-accent/40 hover:text-driven-accent"
               >
-                Learn More
-              </a>
+                Try the free online speedometer
+              </Link>
             </div>
           </div>
 

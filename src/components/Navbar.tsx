@@ -9,9 +9,10 @@ export function Navbar() {
 
   const links = [
     { href: "/#features", label: "Features" },
+    { href: "/speedometer", label: "Online Speedometer" },
+    { href: "/speed-converter", label: "Converter" },
+    { href: "/guides", label: "Guides" },
     { href: "/support", label: "Support" },
-    { href: "/privacy", label: "Privacy" },
-    { href: "/terms", label: "Terms" },
   ];
 
   return (
@@ -25,7 +26,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-7">
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -38,7 +39,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="md:hidden text-driven-text-secondary"
+            className="lg:hidden text-driven-text-secondary"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -48,7 +49,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-white/5 bg-driven-bg/95 backdrop-blur-xl">
+        <div className="lg:hidden border-t border-white/5 bg-driven-bg/95 backdrop-blur-xl">
           <div className="px-4 py-4 space-y-3">
             {links.map((link) => (
               <Link
